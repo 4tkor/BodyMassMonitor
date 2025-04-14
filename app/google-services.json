@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "481423713426",
+    "project_id": "bodymassmonitor",
+    "storage_bucket": "bodymassmonitor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:481423713426:android:8adb55134127777da0b24b",
+        "android_client_info": {
+          "package_name": "com.example.bodymassmonitor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "481423713426-dko9q3ufvlu5e28rplgnpppnkmnttu3p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bodymassmonitor",
+            "certificate_hash": "0bf4ae61e741ef6efa91fce2853cecfa848031e3"
+          }
+        },
+        {
+          "client_id": "481423713426-0m5c5i8o8fp4ggmrj0gv7nqq1ep58j32.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKcAEBuyJykBoF234jGps-2Q0mWgA8-Hg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "481423713426-0m5c5i8o8fp4ggmrj0gv7nqq1ep58j32.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
