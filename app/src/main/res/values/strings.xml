@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Body Mass Monitor</string>
+    <string name="email">Email</string>
+    <string name="password">Jelszó</string>
+    <string name="login">Bejelentkezés</string>
+    <string name="registration">Nincs fiókod? Regisztráció</string>
+    <string name="register">Regisztráció</string>
+    <string name="username">Felhasználónév</string>
+    <string name="password_again">Jelszó megerősítése</string>
+    <string name="back_to_login">Vissza</string>
+    <string name="logout">Kijelentkezés</string>
+</resources>

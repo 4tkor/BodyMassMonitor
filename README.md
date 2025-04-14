@@ -1,0 +1,2 @@
+# BodyMassMonitor
+ Mobil alkalmazásfejlesztés projektmunka
