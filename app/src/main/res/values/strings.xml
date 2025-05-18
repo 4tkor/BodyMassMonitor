@@ -22,5 +22,31 @@
     <string name="cd_add">Hozzáadás</string>
     <string name="cd_stats">Statisztika</string>
     <string name="chart_title">Testtömeg felbontás</string>
+    <string name="import_in_progress">Fájl betöltése folyamatban...</string>
+    <string name="import_success">%1$d rekord sikeresen importálva.</string>
+    <string name="import_failed">Hiba történt: %1$s</string>
+    <string name="import_duplicates_title">Duplikált dátum</string>
+    <string name="import_duplicates_msg">%1$d rekord már létezik. Lecseréled ezeket?</string>
+    <string name="btn_replace">Csere</string>
+    <string name="area_fat">Zsír (kg)</string>
+    <string name="area_muscle">Izom (kg)</string>
+    <string name="area_other">Egyéb (kg)</string>
+    <string name="chart_subtitle_fmt">Zsír: %.1f kg (%.0f%%)   Izom: %.1f kg (%.0f%%)</string>
+    <string name="chart_composition_fmt">Zsír: %.1f kg (%.0f%%)   Izom: %.1f kg (%.0f%%)</string>
+    <string name="btn_delete">Törlés</string>
+
+    <string name="delete_confirmation_title">Mérés törlése</string>
+    <string name="delete_confirmation_msg">Biztosan törlöd a kiválasztott mérést?</string>
+
+    <string name="toast_deleted">Mérés törölve</string>
+    <string name="toast_delete_failed">Törlés sikertelen: %1$s</string>
+    <!-- %1$d rekord létezik … -->
+    <string name="duplicate_title">Már van ezen a napon mérés</string>
+    <string name="duplicate_msg">Felülírod a meglévő mérés(eke)t?</string>
+    <string name="fmt_fat_pct">Zsír: %.1f%%</string>
+    <string name="fmt_muscle_pct">Izom: %.1f%%</string>
+    <string name="fmt_other_kg">Egyéb: %.1f kg</string>
+
+
 
 </resources>

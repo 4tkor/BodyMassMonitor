@@ -1,11 +1,18 @@
 package com.example.bodymassmonitor;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.mikephil.charting.charts.BarChart;
@@ -29,37 +36,45 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Home screen: stacked bar‑chart of body‑composition measurements with a detail card underneath.
- * <p>
- * Taps on any bar segment (or bar position) populate the detail card; newest record is shown on start.
- * Real‑time updates come from {@link FirestoreRepository#listenToMeasurements}.
+ * Home screen with stacked bar-chart, detail card, CSV import
+ * …és most már törlő gombbal a kijelölt méréshez.
  */
-public class HomeActivity extends AppCompatActivity {
+public class HomeActivity extends AppCompatActivity
+        implements ImportCsvLoader.Callback {
 
-    // ── State ──────────────────────────────────────────────────────────
+    // ── State ───────────────────────────────────────────────────────
     private final List<Measurement> data = new ArrayList<>();
     private final FirestoreRepository repo = new FirestoreRepository();
     private ListenerRegistration reg;
+    private Measurement selected;                 // aktuálisan kijelölt mérés
 
-    // ── UI ─────────────────────────────────────────────────────────────
+    // ── UI ──────────────────────────────────────────────────────────
     private BarChart barChart;
     private MaterialCardView cardDetail;
     private TextView tvDate, tvWeight, tvBmi, tvFat, tvMuscle, tvOther;
+    private Button btnDelete;
     private DateFormat df;
 
-    // ── Lifecycle ──────────────────────────────────────────────────────
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    // SAF file picker
+    private ActivityResultLauncher<String[]> pickCsvLauncher;
+
+    // ── Lifecycle ───────────────────────────────────────────────────
+    @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
         df = android.text.format.DateFormat.getDateFormat(this);
 
-        // Top‑app‑bar menu ------------------------------------------------
+        /* fájlválasztó */
+        pickCsvLauncher = registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(),
+                this::onCsvPicked);
+
+        /* Top app-bar */
         MaterialToolbar top = findViewById(R.id.topAppBar);
         top.setOnMenuItemClickListener(this::handleMenu);
 
-        // Bar‑chart -------------------------------------------------------
+        /* Bar-chart */
         barChart = findViewById(R.id.barChart);
         barChart.getDescription().setEnabled(false);
         barChart.getAxisRight().setEnabled(false);
@@ -67,24 +82,32 @@ public class HomeActivity extends AppCompatActivity {
         barChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
             @Override public void onValueSelected(Entry e, Highlight h) {
                 int idx = (int) e.getX();
-                if (idx >= 0 && idx < data.size()) showDetails(data.get(idx));
+                if (idx >= 0 && idx < data.size()) {
+                    selected = data.get(idx);
+                    showDetails(selected);
+                    btnDelete.setVisibility(View.VISIBLE);
+                }
             }
-            @Override public void onNothingSelected() { /* no‑op */ }
+            @Override public void onNothingSelected() {
+                selected = null;
+                btnDelete.setVisibility(View.GONE);
+            }
         });
 
-        // Detail‑card -----------------------------------------------------
+        /* Részletező kártya */
         cardDetail = findViewById(R.id.cardDetail);
-        tvDate    = findViewById(R.id.tvDate);
-        tvWeight  = findViewById(R.id.tvWeight);
-        tvBmi     = findViewById(R.id.tvBmi);
-        tvFat     = findViewById(R.id.tvFat);
-        tvMuscle  = findViewById(R.id.tvMuscle);
-        tvOther   = findViewById(R.id.tvOther);
+        tvDate   = findViewById(R.id.tvDate);
+        tvWeight = findViewById(R.id.tvWeight);
+        tvBmi    = findViewById(R.id.tvBmi);
+        tvFat    = findViewById(R.id.tvFat);
+        tvMuscle = findViewById(R.id.tvMuscle);
+        tvOther  = findViewById(R.id.tvOther);
+        btnDelete = findViewById(R.id.btn_delete);
+        btnDelete.setOnClickListener(v -> confirmDelete());
 
-        // FABs ------------------------------------------------------------
+        /* FAB-ok */
         FloatingActionButton fabAdd   = findViewById(R.id.fab_add);
         FloatingActionButton fabStats = findViewById(R.id.fab_stats);
-
         fabAdd.setOnClickListener(v ->
                 startActivity(new Intent(this, AddMeasurementActivity.class)));
         fabStats.setOnClickListener(v ->
@@ -102,19 +125,25 @@ public class HomeActivity extends AppCompatActivity {
                 data.add(m);
             });
             updateChart();
-            if (!data.isEmpty()) showDetails(data.get(data.size() - 1)); // newest record
+            if (!data.isEmpty()) {
+                selected = data.get(data.size() - 1);
+                showDetails(selected);
+                btnDelete.setVisibility(View.VISIBLE);
+            } else {
+                selected = null;
+                btnDelete.setVisibility(View.GONE);
+            }
         });
     }
-
     @Override protected void onStop() {
         super.onStop();
         if (reg != null) reg.remove();
     }
 
-    // ── Chart builder ──────────────────────────────────────────────────
+    // ── Chart builder ───────────────────────────────────────────────
     private void updateChart() {
         List<BarEntry> entries = new ArrayList<>();
-        List<String>   xLabels = new ArrayList<>();
+        List<String> xLabels   = new ArrayList<>();
 
         for (int i = 0; i < data.size(); i++) {
             Measurement m = data.get(i);
@@ -122,13 +151,13 @@ public class HomeActivity extends AppCompatActivity {
             float muscleW = m.getWeight() * m.getMuscle() / 100f;
             float otherW  = m.getWeight() - fatW - muscleW;
 
-            entries.add(new BarEntry(i, new float[]{fatW, muscleW, otherW}));
+            entries.add(new BarEntry(i, new float[]{otherW, muscleW, fatW}));
             xLabels.add(df.format(m.getDate()));
         }
 
         BarDataSet ds = new BarDataSet(entries, "Body composition");
-        ds.setColors(new int[]{Color.RED, Color.GREEN, Color.BLUE});
-        ds.setStackLabels(new String[]{"Fat", "Muscle", "Other"});
+        ds.setColors(new int[]{Color.BLUE, Color.RED, Color.YELLOW});
+        ds.setStackLabels(new String[]{"Egyéb", "Izom", "Zsír"});
 
         BarData bd = new BarData(ds);
         bd.setBarWidth(0.6f);
@@ -142,21 +171,50 @@ public class HomeActivity extends AppCompatActivity {
         barChart.invalidate();
     }
 
-    // ── Detail‑card updater ───────────────────────────────────────────
+    // ── Detail-card updater ─────────────────────────────────────────
     private void showDetails(Measurement m) {
         tvDate.setText(df.format(m.getDate()));
-        tvWeight.setText(String.format("Súly: %.1f kg", m.getWeight()));
-        tvBmi.setText(String.format("BMI: %.1f", m.getBmi()));
-        tvFat.setText(String.format("Zsír: %.1f%%", m.getFat()));
-        tvMuscle.setText(String.format("Izom: %.1f%%", m.getMuscle()));
+        tvWeight.setText(getString(R.string.fmt_weight, m.getWeight()));
+        tvBmi.setText(getString(R.string.fmt_bmi, m.getBmi()));
+        tvFat.setText(getString(R.string.fmt_fat, m.getFat()));
+        tvMuscle.setText(getString(R.string.fmt_muscle, m.getMuscle()));
 
         float fatW    = m.getWeight() * m.getFat()    / 100f;
         float muscleW = m.getWeight() * m.getMuscle() / 100f;
         float otherW  = m.getWeight() - fatW - muscleW;
-        tvOther.setText(String.format("Egyéb: %.1f kg", otherW));
+        tvOther.setText(getString(R.string.fmt_other, otherW));
     }
 
-    // ── Menu handler (if/else avoids switch‑constant quirk) ────────────
+    // ── Delete flow ────────────────────────────────────────────────
+    private void confirmDelete() {
+        if (selected == null) return;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.delete_confirmation_title)
+                .setMessage(R.string.delete_confirmation_msg)
+                .setPositiveButton(R.string.btn_delete, (d,w) -> doDelete())
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void doDelete() {
+        btnDelete.setEnabled(false);
+        repo.deleteMeasurement(selected.getId(), new FirestoreRepository.SimpleCallback() {
+            @Override public void onSuccess() {
+                Snackbar.make(barChart, R.string.toast_deleted, Snackbar.LENGTH_SHORT).show();
+                btnDelete.setVisibility(View.GONE);
+                btnDelete.setEnabled(true);
+                selected = null;
+            }
+            @Override public void onFailure(@NonNull Exception e) {
+                Snackbar.make(barChart,
+                        getString(R.string.toast_delete_failed, e.getMessage()),
+                        Snackbar.LENGTH_LONG).show();
+                btnDelete.setEnabled(true);
+            }
+        });
+    }
+
+    // ── Menu handler ───────────────────────────────────────────────
     private boolean handleMenu(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_logout) {
@@ -165,9 +223,41 @@ public class HomeActivity extends AppCompatActivity {
             finish();
             return true;
         } else if (id == R.id.action_import) {
-            Snackbar.make(barChart, "Import funkció később jön 🚧", Snackbar.LENGTH_SHORT).show();
+            pickCsvLauncher.launch(
+                    new String[]{"text/csv",
+                            "text/comma-separated-values",
+                            "text/plain"});
             return true;
         }
         return false;
+    }
+
+    // ── SAF callback ───────────────────────────────────────────────
+    private void onCsvPicked(Uri uri) {
+        if (uri == null) return; // user cancelled
+        Snackbar.make(barChart, R.string.import_in_progress, Snackbar.LENGTH_SHORT).show();
+        new ImportCsvLoader(this, getContentResolver(), repo, this).execute(uri);
+    }
+
+    // ── ImportCsvLoader.Callback ───────────────────────────────────
+    @Override public void onImportFinished(ImportCsvLoader.Result r) {
+        if (r.error != null) {
+            Snackbar.make(barChart,
+                    getString(R.string.import_failed, r.error.getMessage()),
+                    Snackbar.LENGTH_LONG).show();
+            return;
+        }
+        if (!r.duplicates.isEmpty()) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.import_duplicates_title)
+                    .setMessage(getString(R.string.import_duplicates_msg, r.duplicates.size()))
+                    .setPositiveButton(R.string.btn_replace, (d,w) -> r.replaceRunnable.run())
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+        } else {
+            Snackbar.make(barChart,
+                    getString(R.string.import_success, r.imported),
+                    Snackbar.LENGTH_SHORT).show();
+        }
     }
 }

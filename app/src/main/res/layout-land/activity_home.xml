@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- ── Top AppBar with overflow menu ─────────────────────────── -->
+    <!-- ── Top AppBar  ───────────────────────────────────────────── -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/topAppBar"
         style="@style/Widget.Material3.Toolbar"
@@ -13,38 +13,23 @@
         android:title="@string/chart_title"
         app:menu="@menu/menu_home" />
 
-    <!-- ── Main content container ────────────────────────────────── -->
+    <!-- ── Tartalom fekvőben: bal = adatkártya, jobb = oszlopdiagram ── -->
     <LinearLayout
         android:id="@+id/linearLayout"
+        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
         android:padding="16dp"
         app:layout_anchor="@id/topAppBar"
         app:layout_anchorGravity="bottom">
 
-        <!-- Chart title (accessibility-friendly) -->
-        <TextView
-            android:id="@+id/tvChartTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingBottom="8dp"
-            android:text="@string/chart_title"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <!-- Stacked Bar Chart -->
-        <com.github.mikephil.charting.charts.BarChart
-            android:id="@+id/barChart"
-            android:layout_width="match_parent"
-            android:layout_height="250dp" />
-
-        <!-- Detail card for selected measurement -->
+        <!-- BAL OLDAL: részletező kártya -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardDetail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp">
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -88,6 +73,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="16sp" />
+
                 <Button
                     android:id="@+id/btn_delete"
                     android:layout_width="match_parent"
@@ -98,33 +84,38 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- JOBB OLDAL: Stacked BarChart -->
+        <com.github.mikephil.charting.charts.BarChart
+            android:id="@+id/barChart"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
     </LinearLayout>
 
-    <!-- ── Floating Action Buttons  ──────────────────────────────── -->
+    <!-- ── Floating Action Buttonok  ──────────────────────────────── -->
 
+    <!-- Statisztika FAB (jobb-alsó sarok) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_stats"
-        android:src="@drawable/ic_chart"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="20dp"
         android:contentDescription="@string/cd_stats"
+        android:src="@drawable/ic_chart"
         app:fabSize="normal"
         app:layout_anchor="@id/barChart"
-        app:layout_anchorGravity="bottom|right" />
+        app:layout_anchorGravity="bottom|end" />
 
+    <!-- Hozzáadás FAB (középre igazítva a diagram alatt) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="30dp"
-
         android:contentDescription="@string/cd_add"
         android:src="@drawable/ic_add"
         app:fabCustomSize="75dp"
         app:layout_anchor="@+id/linearLayout"
         app:layout_anchorGravity="bottom|center" />
-    <!-- … a meglévő két FAB után illeszd be: -->
-
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
