@@ -12,4 +12,15 @@
     <string name="upload_measurment">Mérés feltöltése</string>
     <string name="back">Vissza</string>
     <string name="chart">Chart</string>
+
+    <string name="fmt_date">Dátum: %1$s</string>
+    <string name="fmt_weight">Súly: %.1f kg</string>
+    <string name="fmt_bmi">BMI: %.1f</string>
+    <string name="fmt_fat">Zsír: %.1f %%</string>
+    <string name="fmt_muscle">Izom: %.1f %%</string>
+    <string name="fmt_other">Egyéb: %.1f %%</string>
+    <string name="cd_add">Hozzáadás</string>
+    <string name="cd_stats">Statisztika</string>
+    <string name="chart_title">Testtömeg felbontás</string>
+
 </resources>

@@ -1,69 +1,67 @@
 package com.example.bodymassmonitor;
 
-import android.graphics.Paint;
 import android.os.Bundle;
-import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.bodymassmonitor.R;
-
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.series.DataPoint;
-import com.jjoe64.graphview.series.LineGraphSeries;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ChartActivity extends AppCompatActivity {
 
+    private LineChart chart;
     private final FirestoreRepository repo = new FirestoreRepository();
     private ListenerRegistration reg;
+    private List<Measurement> all = new ArrayList<>();
 
-    private final List<Measurement> list = new ArrayList<>();
-    private MeasurementAdapter adapter;
-    private GraphView graph;
+    enum Range { MONTH, QUARTER, YEAR, ALL }
+    private Range currentRange = Range.ALL;
 
-    @Override protected void onCreate(@Nullable Bundle saved) {
-        super.onCreate(saved);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chart);
 
-        graph = findViewById(R.id.graph);
+        MaterialToolbar bar = findViewById(R.id.chartToolbar);
+        bar.setNavigationOnClickListener(v -> finish());
 
-        adapter = new MeasurementAdapter(list, m ->
-                repo.deleteMeasurement(m.getId(), new FirestoreRepository.SimpleCallback() {
-                    @Override public void onSuccess() {
-                        Toast.makeText(ChartActivity.this, "Törölve", Toast.LENGTH_SHORT).show();
-                    }
-                    @Override public void onFailure(Exception e) {
-                        Toast.makeText(ChartActivity.this, "Hiba: "+e.getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                }));
+        chart = findViewById(R.id.areaChart);
+        chart.getDescription().setEnabled(false);
+        chart.getAxisRight().setEnabled(false);
+        Legend l = chart.getLegend();
+        l.setEnabled(false);
 
-        RecyclerView rv = findViewById(R.id.recycler);
-        rv.setLayoutManager(new LinearLayoutManager(this));
-        rv.setAdapter(adapter);
+        MaterialButtonToggleGroup group = findViewById(R.id.groupFilters);
+        group.addOnButtonCheckedListener((g, id, checked) -> {
+            if (!checked) return;
+            if (id == R.id.btn_month) currentRange = Range.MONTH;
+            else if (id == R.id.btn_quarter) currentRange = Range.QUARTER;
+            else if (id == R.id.btn_year) currentRange = Range.YEAR;
+            else currentRange = Range.ALL;
+            draw();
+        });
     }
 
     @Override protected void onStart() {
         super.onStart();
-        reg = repo.listenToMeasurements((qs, e) -> {
-            if (e != null) { return; }
-            list.clear();
-            qs.forEach(d -> {
-                Measurement m = d.toObject(Measurement.class);
-                m.setId(d.getId());
-                list.add(m);
-            });
-            Collections.sort(list, Comparator.comparing(Measurement::getDate));
-            adapter.notifyDataSetChanged();
-            plotGraph();
+        reg = repo.listenToMeasurements((snap, err) -> {
+            if (err != null) return;
+            all = new ArrayList<>();
+            snap.forEach(d -> all.add(d.toObject(Measurement.class)));
+            draw();
         });
     }
 
@@ -72,60 +70,59 @@ public class ChartActivity extends AppCompatActivity {
         if (reg != null) reg.remove();
     }
 
-    /** 4 sorozat – súly, BMI, zsír, izom */
-    private void plotGraph() {
-        graph.removeAllSeries();
-        if (list.isEmpty()) return;
+    private void draw() {
+        List<Measurement> src = filter();
+        if (src.isEmpty()) { chart.clear(); return; }
 
-        int n = list.size();
-        DataPoint[] wt = new DataPoint[n];
-        DataPoint[] bmi = new DataPoint[n];
-        DataPoint[] fat = new DataPoint[n];
-        DataPoint[] mus = new DataPoint[n];
+        List<Entry> fatCum = new ArrayList<>();
+        List<Entry> musCum = new ArrayList<>();
+        List<Entry> othCum = new ArrayList<>();
 
-        for (int i = 0; i < n; i++) {
-            double x = i;                           // egyszerű sorszám
-            Measurement m = list.get(i);
-            wt[i]  = new DataPoint(x, m.getWeight());
-            bmi[i] = new DataPoint(x, m.getBmi());
-            fat[i] = new DataPoint(x, m.getFat());
-            mus[i] = new DataPoint(x, m.getMuscle());
+        float cumFat = 0, cumMus = 0, cumOth = 0;
+        for (int i = 0; i < src.size(); i++) {
+            Measurement m = src.get(i);
+            float fatW = m.getWeight() * m.getFat() / 100f;
+            float musW = m.getWeight() * m.getMuscle() / 100f;
+            float othW = m.getWeight() - fatW - musW;
+            cumFat += fatW;
+            cumMus += musW;
+            cumOth += othW;
+            fatCum.add(new Entry(i, cumFat));
+            musCum.add(new Entry(i, cumFat + cumMus));
+            othCum.add(new Entry(i, cumFat + cumMus + cumOth));
         }
 
-        graph.addSeries(styled(new LineGraphSeries<>(wt), 0));
-        graph.addSeries(styled(new LineGraphSeries<>(bmi), 1));
-        graph.addSeries(styled(new LineGraphSeries<>(fat), 2));
-        graph.addSeries(styled(new LineGraphSeries<>(mus), 3));
+        LineDataSet fatSet = makeSet(fatCum, 0x55F44336); // red alpha
+        LineDataSet musSet = makeSet(musCum, 0x554CAF50); // green alpha
+        LineDataSet othSet = makeSet(othCum, 0x552196F3); // blue alpha
 
-
-        graph.getViewport().setXAxisBoundsManual(true);
-        graph.getViewport().setMinX(0);
-        graph.getViewport().setMaxX(n - 1);
-        graph.getGridLabelRenderer().setHorizontalAxisTitle("Mérés sorszám");
+        LineData data = new LineData(fatSet, musSet, othSet);
+        chart.setData(data);
+        chart.invalidate();
     }
 
-    /** Vékony vonal + pontok */
-    /* Paletta – 4 eltérő szín (Material 3 árnyalatok) */
-    private static final int[] SERIES_COLORS = {
-            0xFF1E88E5, // kék
-            0xFF43A047, // zöld
-            0xFFF4511E, // narancs
-            0xFFE53935  // piros
-    };
-
-    /** Alap beállítás + lekerekített vonalvég, saját Paint-tel */
-    private LineGraphSeries<DataPoint> styled(LineGraphSeries<DataPoint> s, int colorIdx) {
-        s.setDrawDataPoints(true);
-        s.setDataPointsRadius(4f);
-        s.setAnimated(true);
-
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(3f);                 // vonalvastagság
-        p.setStrokeCap(Paint.Cap.ROUND);
-        p.setColor(SERIES_COLORS[colorIdx % SERIES_COLORS.length]);
-
-        s.setCustomPaint(p);
+    private LineDataSet makeSet(List<Entry> vals, int color) {
+        LineDataSet s = new LineDataSet(vals, "");
+        s.setDrawFilled(true);
+        s.setFillColor(color);
+        s.setDrawValues(false);
+        s.setDrawCircles(false);
+        s.setColor(color);
+        s.setLineWidth(1f);
         return s;
+    }
+
+    private List<Measurement> filter() {
+        if (currentRange == Range.ALL) return all;
+        Calendar c = Calendar.getInstance();
+        switch (currentRange) {
+            case MONTH:   c.add(Calendar.MONTH, -1); break;
+            case QUARTER: c.add(Calendar.MONTH, -3); break;
+            case YEAR:    c.add(Calendar.YEAR,  -1); break;
+        }
+        Date limit = c.getTime();
+        return all.stream()
+                .filter(m -> m.getDate().after(limit))
+                .collect(Collectors.toList());
     }
 }

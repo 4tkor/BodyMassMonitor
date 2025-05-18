@@ -1,19 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="16dp">
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <!-- GraphView -->
-    <com.jjoe64.graphview.GraphView
-        android:id="@+id/graph"
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/chartToolbar"
+        style="@style/Widget.Material3.Toolbar"
+        app:navigationIcon="@drawable/abc_ic_ab_back_material"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_height="wrap_content"
+        android:title="Statisztika"/>
 
-    <!-- RecyclerView alatt -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler"
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-</LinearLayout>
+        android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize">
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/groupFilters"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checkedButton="@+id/btn_all">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_month"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hónap"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_quarter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3 hó"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_year"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Év"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_all"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Összes"/>
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/areaChart"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

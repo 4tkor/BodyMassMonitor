@@ -2,4 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="md_theme_dark_background">#212123</color>
+    <color name="md_theme_dark_onPrimary">#FFFFFF</color>
+    <color name="md_theme_dark_surfaceVariant">#403F43</color>
+    <color name="md_theme_dark_onSurfaceVariant">#D3D1D7</color>
+
+
 </resources>
