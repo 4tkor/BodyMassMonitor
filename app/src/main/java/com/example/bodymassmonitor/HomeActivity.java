@@ -24,6 +24,8 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 
+import java.util.Date;
+
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -49,6 +51,20 @@ public class HomeActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        // pl. HomeActivity onCreate végén:
+        FirestoreRepository repo = new FirestoreRepository();
+
+        Measurement demo = new Measurement(new Date(), 80f, 24.7f, 18f, 38f);
+        repo.addMeasurement(demo, new FirestoreRepository.SimpleCallback() {
+            @Override public void onSuccess() {
+                Log.i("myinfo", "Demo mentve!");
+            }
+            @Override public void onFailure( Exception e) {
+                Log.e("myinfo", "Firestore hiba", e);
+            }
+        });
+
     }
 
     public void logout(View view) {
@@ -67,4 +83,15 @@ public class HomeActivity extends AppCompatActivity {
         myView.startAnimation(animation);
     }
 
+    public void GoToAddMeasurement(View view) {
+        Log.d(LOG_TAG, "Add Measurment clicked!");
+        startActivity(new Intent(this, AddMeasurementActivity.class));
+
+    }
+
+    public void GoToChart(View view) {
+        Log.d(LOG_TAG, "Chart clicked!");
+        startActivity(new Intent(this, ChartActivity.class));
+
+    }
 }

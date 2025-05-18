@@ -9,4 +9,7 @@
     <string name="password_again">Jelszó megerősítése</string>
     <string name="back_to_login">Vissza</string>
     <string name="logout">Kijelentkezés</string>
+    <string name="upload_measurment">Mérés feltöltése</string>
+    <string name="back">Vissza</string>
+    <string name="chart">Chart</string>
 </resources>
